@@ -1,0 +1,10 @@
+pypresence
+discord.py
+threading
+requests
+discord
+pathlib
+time
+json
+sys
+os

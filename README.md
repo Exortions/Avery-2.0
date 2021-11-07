@@ -36,3 +36,5 @@ To edit settings, open the config.json file and edit from there.
 # Credits
 skeet#1000 - Original Avery creation<br>
 Exortions#8077 - Avery 2.0 revamp
+
+We do not take any responsibility for your actions using this.

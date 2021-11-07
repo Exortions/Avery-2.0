@@ -8,6 +8,7 @@ import os
 
 from discord.ext import commands
 from pypresence import Presence
+from pathlib import Path
 
 os.system(f'cls & mode 85,20 & title Avery 2.0 - Config')
 
@@ -20,6 +21,27 @@ def save_stats(token: str = 'none', color: str = '\x1b[38;5;56m', pace: int = 0.
     with open('config.json', 'w') as f:
         json.dump(stats, f)
     pass
+
+def init_io():
+    try:
+        dir = os.getcwd()
+        path = f'{dir}\scrape'
+        os.mkdir(path)
+    except:
+        pass
+    if not Path('config.json').is_file():
+        with open('config.json', 'a') as f:
+            f.write('')
+            json.dump({
+                'token': 'none',
+                'color': '\x1b[38;5;56m',
+                'text-pace': 0.1
+            }, f)
+    open('scrape/members.txt', 'w')
+    open('scrape/channels.txt', 'w')
+    open('scrape/roles.txt', 'w')
+
+init_io()
 
 def getToken():
     with open('config.json') as f:
@@ -46,19 +68,6 @@ def println(msg: str = '', delay: int = getTextPace()):
         time.sleep(delay)
     pass
 
-def init_io():
-    try:
-        dir = os.getcwd()
-        path = f'{dir}\scrape'
-        os.mkdir(path)
-    except:
-        pass
-    open('scrape/members.txt', 'w')
-    open('scrape/channels.txt', 'w')
-    open('scrape/roles.txt', 'w')
-
-init_io()
-
 clr = getColor()
 
 println(f'{clr}> \033[37mWelcome to the Avery Nuker 2.0. Press any key to start {clr}>> \033[37m')
@@ -80,12 +89,14 @@ try:
         if getToken() != 'none':
             token = getToken()
         else:
-            token = input(f'{clr}> \033[37mToken{clr}: \033[37m')
+            token = input(f'{clr}> \033[37mInvalid token! Token{clr}: \033[37m')
 except:
-    token = input(f'{clr}> \033[37mToken{clr}: \033[37m')
+    token = input(f'{clr}> \033[37mInvalid token! Token{clr}: \033[37m')
 
 println(f'{clr}> \033[37mRich Presence ({clr}Y\033[37m/{clr}N\033[37m){clr}: \033[37m')
 rich_presence = input()
+
+save_stats(token=token, color=getColor(), pace=getTextPace())
 
 os.system('cls')
 
