@@ -108,9 +108,9 @@ def check_token():
 def RichPresence():
     if rich_presence == 'y' or rich_presence == 'Y':
         try:
-            RPC = Presence('816053514584195073')
+            RPC = Presence('906949877945208882')
             RPC.connect()
-            RPC.update(details='Connected', large_image='averylarge2', small_image='avery', large_text='github.com/Exortions/Avery-V2', start=time.time())
+            RPC.update(state='Nuking Discord Servers', details='Connected', large_image='avery', small_image='avery', large_text='Avery', small_text='Avery Nuker 2.0', start=time.time())
         except:
             pass
 
