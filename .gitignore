@@ -8,3 +8,4 @@ venv/
 avery.spec
 config.json
 compile.bat
+publish.bat
