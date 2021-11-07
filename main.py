@@ -179,7 +179,7 @@ class Avery:
                 self.retry_after(r)
             else:
                 if self.success(r):
-                    self.say(f'Banned{self.color}{member.strip()}')
+                    self.say(f'Banned {self.color}{member.strip()}')
                 break
     
     def KickMembers(self, guild, member):
@@ -209,7 +209,7 @@ class Avery:
                 self.retry_after(r)
             else:
                 if self.success(r):
-                    self.say(f'Deleted Role {self.color} {role.strip()}')
+                    self.say(f'Deleted Role {self.color}{role.strip()}')
                 break
     
     def SpamChannels(self, guild, name, amount, message, spam):
