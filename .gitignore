@@ -1,4 +1,10 @@
 __pycache__/
 output/
 scrape/
+build/
+dist/
 venv/
+
+avery.spec
+config.json
+compile.bat
