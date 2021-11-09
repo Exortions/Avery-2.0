@@ -4,6 +4,7 @@ threading
 requests
 discord
 pathlib
+psutil
 time
 json
 sys
