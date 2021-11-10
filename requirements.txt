@@ -7,5 +7,6 @@ pathlib
 psutil
 time
 json
+eel
 sys
 os

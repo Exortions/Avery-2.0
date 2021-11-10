@@ -1,5 +1,4 @@
 import threading
-from discord.ext.commands.converter import RoleConverter
 import requests
 import discord
 import psutil
@@ -14,7 +13,7 @@ from pathlib import Path
 
 os.system(f'cls & mode 85,20 & title Avery 2.0 - Config')
 
-def save_stats(token: str = 'none', color: str = '\x1b[38;5;56m', pace: int = 0.1, musicBot: bool = False, voiceChannel: str = ''):
+def save_stats(token: str = 'none', color: str = '\x1b[38;5;56m', pace: int = 0.05, musicBot: bool = False, voiceChannel: str = ''):
     stats = {
         'token': token,
         'color': color,
@@ -26,7 +25,7 @@ def save_stats(token: str = 'none', color: str = '\x1b[38;5;56m', pace: int = 0.
         json.dump(stats, f)
     pass
 
-def init_io():
+def Init():
     try:
         dir = os.getcwd()
         path = f'{dir}\scrape'
@@ -39,7 +38,7 @@ def init_io():
             json.dump({
                 'token': 'none',
                 'color': '\x1b[38;5;56m',
-                'text-pace': 0.1,
+                'text-pace': 0.05,
                 'music-bot': False,
                 'voice-channel': 'General'
             }, f)
@@ -47,7 +46,7 @@ def init_io():
     open('scrape/channels.txt', 'w')
     open('scrape/roles.txt', 'w')
 
-init_io()
+Init()
 
 def get(path: str):
     with open('config.json') as f:
@@ -62,7 +61,7 @@ def getColor():
     return get('color')
 
 def getTextPace():
-    return 0.0
+    return get('text-pace')
 
 def isMusicBot():
     return get('music-bot')
@@ -70,26 +69,26 @@ def isMusicBot():
 def getVoiceChannel():
     return get('voice-channel')
 
-def println(msg: str = '', delay: int = getTextPace()):
+def println(msg: str = '', delay: int = getTextPace(), printOther: str = ''):
     for c in msg:
         sys.stdout.write(c)
         sys.stdout.flush()
         time.sleep(delay)
-    pass
+    sys.stdout.write(printOther)
 
 clr = getColor()
 
-println(f'{clr}> \033[37mWelcome to the Avery Nuker 2.0. Press any key to start {clr}>> \033[37m')
+println(f'{clr}> \033[37mWelcome to the Avery Nuker 2.0. Press any key to start ', printOther=f'{clr}>> \033[37m')
 input()
 
 token = ''
 token_inputted = False
 rich_presence = ''
 
-println(f'{clr}> \033[37mLoad token from config.json file? Default: y {clr}>> \033[37m')
+println(f'{clr}> \033[37mLoad token from config.json file? ', printOther=f'({clr}Y\033[37m/{clr}N\033[37m){clr}>> \033[37m')
 choice = input()
 
-if choice == 'n' or choice == 'N':
+if choice.capitalize == 'N':
     token = input(f'{clr}> \033[37mToken{clr}: \033[37m')
     token_inputted = True
 
@@ -102,7 +101,13 @@ try:
 except:
     token = input(f'{clr}> \033[37mInvalid token! Token{clr}: \033[37m')
 
-println(f'{clr}> \033[37mRich Presence ({clr}Y\033[37m/{clr}N\033[37m){clr}: \033[37m')
+println(f'{clr}> \033[37mLoad GUI ', printOther=f'({clr}Y\033[37m/{clr}N\033[37m){clr}>> \033[37m')
+choice = input()
+
+if choice.capitalize == 'Y':
+    pass
+
+println(f'{clr}> \033[37mRich Presence ', printOther=f'({clr}Y\033[37m/{clr}N\033[37m){clr}>> \033[37m')
 rich_presence = input()
 
 save_stats(token=token, color=getColor(),pace=getTextPace(), musicBot=isMusicBot(), voiceChannel=getVoiceChannel())
@@ -114,7 +119,7 @@ def check_token():
     else: return 'bot'
 
 def RichPresence():
-    if rich_presence == 'y' or rich_presence == 'Y':
+    if rich_presence.capitalize == 'Y':
         try:
             RPC = Presence('906949877945208882')
             RPC.connect()
@@ -303,7 +308,7 @@ class Avery:
         channel_spam = self.ask(f'Spam Channels? ({self.color}Y{self.reset}/{self.color}N{self.reset})')
         channel_spam_amount = 0
         channel_spam_message = ''
-        if channel_spam == 'Y' or channel_spam == 'y':
+        if channel_spam.capitalize == 'Y':
             channel_spam_amount = self.ask('Spam Amount')
             channel_spam_message = self.ask('Spam Message')
         role_name = self.ask('Role Names')
@@ -321,10 +326,9 @@ class Avery:
         for role in roles:
             threading.Thread(target=self.DeleteRoles, args=(guild, role,)).start()
         for i in range(int(channel_amount)):
-            if channel_spam == 'Y' or channel_spam == 'y':
+            if channel_spam.capitalize == 'Y':
                 threading.Thread(target=self.SpamChannels, args=(guild, channel_name, channel_spam_amount, channel_spam_message, True)).start()
             else:
-                self.SpamChannels()
                 threading.Thread(target=self.SpamChannels, args=(guild, channel_name, 0, '', False)).start()
         for i in range(int(role_amount)):
             threading.Thread(target=self.SpamRoles, args=(guild, role_name,)).start()
@@ -368,15 +372,15 @@ class Avery:
         spam = self.ask(f'Spam channel ({self.color}Y{self.reset}/{self.color}N{self.reset})')
         spamamount = 0
         message = ''
-        if spam == 'Y' or spam == 'y':
+        if spam.capitalize == 'Y':
             spamamount = int(self.ask('Spam message amount'))
             message = self.ask('Spam message')
         print()
         for i in range(int(amount)):
-            if spam == 'Y' or spam == 'y':
-                threading.Thread(target=self.SpamChannels, args=(guild, name, spamamount, message, True)).start()
+            if spam.capitalize == 'Y':
+                threading.Thread(target=self.SpamChannels, args=(guild, name, spamamount, message, True,)).start()
             else:
-                threading.Thread(target=self.SpamChannels, args=(guild, name, 0, '', False)).start()
+                threading.Thread(target=self.SpamChannels, args=(guild, name, 0, '', False,)).start()
 
     async def RoleSpam(self):
         guild = self.getGuild()
@@ -520,7 +524,7 @@ class Avery:
         except:
             print(f'{self.color}>{self.reset} Invalid Token')
             input()
-            os._exit(0)
+            self.LogOut()
 
 @client.event
 async def on_ready():
